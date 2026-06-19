@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Where America plays the lottery — New York and Texas</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  :root{
+    --ink:#14181f; --paper:#f6f3ec; --line:#1d2330; --muted:#5d6571;
+    --maroon:#7a1f2b; --navy:#16243f;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    color:var(--ink);background:var(--paper);line-height:1.45}
+  .wrap{max-width:1180px;margin:0 auto;padding:22px 20px 60px}
+  header h1{font-size:30px;line-height:1.1;margin:0 0 6px;letter-spacing:-.01em}
+  header p.sub{margin:0 0 4px;color:var(--muted);font-size:15px;max-width:780px}
+  .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:18px 0 12px}
+  .seg{display:inline-flex;border:1.5px solid var(--line);border-radius:7px;overflow:hidden}
+  .seg button{border:0;background:transparent;padding:8px 14px;font-size:13.5px;cursor:pointer;font-weight:600;color:var(--muted)}
+  .seg button.on{background:var(--ink);color:var(--paper)}
+  .seg button+button{border-left:1.5px solid var(--line)}
+  .layout{display:grid;grid-template-columns:1fr 320px;gap:18px;align-items:start}
+  #map{height:580px;border:1.5px solid var(--line);border-radius:9px;background:#dfe7ea}
+  .panel{border:1.5px solid var(--line);border-radius:9px;padding:14px 15px;background:#fffdf8}
+  .panel h3{margin:0 0 2px;font-size:14px;text-transform:uppercase;letter-spacing:.04em}
+  .panel .cap{color:var(--muted);font-size:12px;margin:0 0 10px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  td{padding:4px 2px;border-bottom:1px solid #e7e2d6;vertical-align:baseline}
+  td.v{text-align:right;font-family:"Iowan Old Style",Georgia,serif;white-space:nowrap}
+  td .z{font-weight:700} td .c{color:var(--muted);font-size:11.5px}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px;vertical-align:middle}
+  .statbar{display:flex;gap:26px;flex-wrap:wrap;margin:6px 0 2px}
+  .stat .big{font-family:"Iowan Old Style",Georgia,serif;font-size:26px;font-weight:600}
+  .stat .lab{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .legend{font-size:12px;color:var(--muted);margin-top:8px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+  .ramp{display:inline-flex;align-items:center;gap:0}
+  .ramp i{width:24px;height:13px;display:inline-block}
+  .ramp b{font-weight:400;margin:0 4px;font-family:"Iowan Old Style",Georgia,serif}
+  details.method{margin-top:22px;border:1.5px solid var(--line);border-radius:9px;background:#fffdf8;padding:0 16px}
+  details.method summary{cursor:pointer;font-weight:700;padding:13px 0;font-size:14px}
+  details.method[open] summary{border-bottom:1px solid #e7e2d6;margin-bottom:10px}
+  .method p,.method li{font-size:13.5px;color:#2b3140} .method{padding-bottom:14px}
+  a{color:#1c5f9e}
+  .aibtn{position:fixed;right:16px;bottom:16px;background:var(--maroon);color:#fff;border:0;border-radius:20px;
+    padding:9px 15px;font-size:12.5px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.25);z-index:1000}
+  .aipop{position:fixed;right:16px;bottom:58px;width:330px;max-width:88vw;background:var(--navy);color:#eaf0fb;
+    border-radius:10px;padding:15px 16px;font-size:12.8px;line-height:1.5;display:none;z-index:1000;box-shadow:0 6px 22px rgba(0,0,0,.35)}
+  .aipop.show{display:block} .aipop h4{margin:0 0 6px;font-size:13.5px}
+  .aipop ul{margin:6px 0 0;padding-left:17px} .aipop li{margin:3px 0}
+  .leaflet-tooltip.zt{font-size:12.5px;line-height:1.35}
+  @media(max-width:820px){.layout{grid-template-columns:1fr}#map{height:440px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Where America plays the lottery</h1>
+    <p class="sub">Lottery ticket sales by ZIP code in the two states that publish them — New York and Texas — over the most recent 12 months. Each ZIP code is shaded by how much it sells; toggle to control for population and the shading flips from raw dollars to spending per resident.</p>
+  </header>
+
+  <div class="controls">
+    <div class="seg" id="metric">
+      <button data-m="sales" class="on">Total sales</button>
+      <button data-m="per_cap">Per resident</button>
+    </div>
+    <div class="seg" id="statef">
+      <button data-s="ALL" class="on">Both states</button>
+      <button data-s="NY">New York</button>
+      <button data-s="TX">Texas</button>
+    </div>
+  </div>
+
+  <div class="statbar" id="statbar"></div>
+
+  <div class="layout">
+    <div>
+      <div id="map"></div>
+      <div class="legend">
+        <span id="legtitle">Total sales per ZIP code</span>
+        <span class="ramp" id="legramp"></span>
+        <span>Darker = more. Hover a ZIP for detail.</span>
+      </div>
+    </div>
+    <div class="panel">
+      <h3 id="toptitle">Top ZIP codes</h3>
+      <p class="cap" id="topcap"></p>
+      <table><tbody id="toptable"></tbody></table>
+    </div>
+  </div>
+
+  <details class="method">
+    <summary>Methodology, sources and what this does not show</summary>
+    <div class="method" id="methodbody">
+      <p><b>The big caveat, up front.</b> These are sales recorded at the <b>store</b>, not the buyer's home. A ZIP code near offices, highways or a state line will shade dark because of commuters and cross-border shoppers, not residents. Per-resident figures in commercial ZIP codes are inflated for this reason and should not be read as how much locals spend.</p>
+      <ul id="methodlist"></ul>
+      <p><b>Why only New York and Texas?</b> Of the roughly 45 states with lotteries, these are the only two that publish current, machine-readable sales broken out by retailer location. Pennsylvania publishes county totals but stopped updating in 2022; Massachusetts releases town totals as reports; most states release only a list of where you can buy, not how much sells. A uniform national map of lottery sales by neighborhood is not possible because the data does not exist.</p>
+      <p><b>Sources:</b> <a href="https://data.ny.gov/Government-Finance/Lottery-Daily-Retailer-Sales-By-Game-Beginning-202/xyvi-fbb9">New York State Gaming Commission — daily retailer sales</a>; <a href="https://data.texas.gov/dataset/Texas-Lottery-Sales-by-Fiscal-Month-Year-Game-and-/beka-uwfq">Texas Lottery Commission — sales by retailer</a>; population from the U.S. Census Bureau American Community Survey 2019–2023 five-year estimates (total population by ZIP code tabulation area); ZIP boundaries from the Census 2020 cartographic files, simplified.</p>
+    </div>
+  </details>
+</div>
+
+<button class="aibtn" onclick="document.getElementById('aipop').classList.toggle('show')">⚠ AI caution</button>
+<div class="aipop" id="aipop">
+  <h4>How this was built — and its limits</h4>
+  This page was assembled with AI assistance. Before relying on it, know:
+  <ul>
+    <li>Sales are by store location, not buyer residence — see the methodology note.</li>
+    <li>New York and Texas report sales differently; the two are made comparable but not identical.</li>
+    <li>Figures are unaudited as published by each state and cover a trailing 12-month window.</li>
+    <li>Shading uses within-view quantile bins, so colors rescale when you switch states or metric.</li>
+    <li>No claim is made about who plays or why — only where tickets are sold.</li>
+  </ul>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const fmtUSD=v=>'$'+(v>=1e9?(v/1e9).toFixed(2)+'B':v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':Math.round(v));
+const fmtCap=v=>'$'+Math.round(v).toLocaleString();
+const RAMP=['#fff4c2','#ffe08a','#fec44f','#fe9929','#f47020','#e0431b','#b91d1d','#8c0f10'];
+let GEO=null, state='ALL', metric='sales', map, layer, META={}, breaks=[];
+
+fetch('meta.json').then(r=>r.ok?r.json():{}).then(m=>{META=m||{};applyMethod();}).catch(()=>applyMethod());
+fetch('zcta.json').then(r=>r.json()).then(g=>{ GEO=g; initMap(); render(); })
+  .catch(()=>{document.getElementById('map').innerHTML='<p style="padding:20px">Could not load map data.</p>';});
+
+function applyMethod(){
+  const items=[
+    '<b>New York</b>'+(META.ny_window?' covers '+META.ny_window+'. ':': ')+'Sales = the sum of all draw-game wagers (Powerball, Mega Millions, Numbers, Win 4, Take 5, Lotto, Quick Draw and the rest) plus settled scratch-off value, trailing 12 months. Prize payouts are excluded. Online courier and vendor agents are removed because they book statewide sales to a single address.',
+    '<b>Texas</b>'+(META.tx_window?' covers '+META.tx_window+'. ':': ')+'Sales = net ticket sales across all games, draw and scratch, summed to the retailer ZIP code, trailing 12 months.',
+    'Per-resident figures divide a ZIP code’s sales by its total population. This counts children, so it understates spend per adult, but it is the cleanest population control. Per-resident rankings use a 5,000-resident floor to suppress noisy micro-ZIPs.'
+  ];
+  const l=document.getElementById('methodlist'); if(l) l.innerHTML=items.map(t=>'<li>'+t+'</li>').join('');
+}
+
+function initMap(){
+  map=L.map('map',{scrollWheelZoom:false,preferCanvas:true}).setView([37.8,-91],4);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',
+    {attribution:'&copy; OpenStreetMap &copy; CARTO',subdomains:'abcd',maxZoom:19}).addTo(map);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png',
+    {subdomains:'abcd',maxZoom:19,pane:'markerPane'}).addTo(map);
+}
+
+function feats(){ return GEO.features.filter(f=>state==='ALL'||f.properties.state===state); }
+
+function computeBreaks(rows){
+  const vals=rows.map(f=>f.properties[metric]).filter(v=>v>0).sort((a,b)=>a-b);
+  breaks=[];
+  for(let i=1;i<RAMP.length;i++) breaks.push(vals[Math.floor(vals.length*i/RAMP.length)]);
+}
+function colorFor(v){ let i=0; while(i<breaks.length && v>=breaks[i]) i++; return RAMP[i]; }
+
+function styleFn(f){
+  return {fillColor:colorFor(f.properties[metric]),weight:.25,color:'#7a6f55',
+    fillOpacity:.88,opacity:.5};
+}
+
+function render(){
+  const rows=feats();
+  computeBreaks(rows);
+  if(layer) layer.remove();
+  const fc={type:'FeatureCollection',features:rows};
+  layer=L.geoJSON(fc,{style:styleFn,
+    onEachFeature:(f,lyr)=>{const p=f.properties;
+      lyr.bindTooltip('<b>'+(p.city||p.zip)+'</b> &middot; '+p.zip+' ('+p.state+')<br>'+
+        'Total sales: <b>'+fmtUSD(p.sales)+'</b><br>'+
+        'Per resident: <b>'+fmtCap(p.per_cap)+'</b> &middot; pop '+p.pop.toLocaleString()+'<br>'+
+        p.retailers+' retailers',{className:'zt',sticky:true});
+    }}).addTo(map);
+  if(state==='NY') map.setView([42.7,-75.6],6);
+  else if(state==='TX') map.setView([31.3,-99.2],6);
+  else map.fitBounds([[25.5,-106.7],[45.2,-71.5]]);
+  renderLegend(); renderTop(rows); renderStats(rows);
+}
+
+function renderLegend(){
+  document.getElementById('legtitle').textContent = metric==='sales'?'Total sales per ZIP code':'Sales per resident';
+  const f = metric==='sales'?fmtUSD:fmtCap;
+  let h='<b>low</b>';
+  RAMP.forEach((c,i)=>{ h+='<i style="background:'+c+'"></i>'; });
+  h+='<b>high</b>';
+  document.getElementById('legramp').innerHTML=h;
+}
+
+function renderStats(rows){
+  const tot=rows.reduce((s,f)=>s+f.properties.sales,0);
+  const lead=rows.map(f=>f.properties).filter(p=>p.pop>=5000).sort((a,b)=>b.per_cap-a.per_cap)[0];
+  document.getElementById('statbar').innerHTML=
+    stat(fmtUSD(tot),'Total sales, trailing 12 mo')+
+    stat(rows.length.toLocaleString(),'ZIP codes')+
+    (lead?stat(fmtCap(lead.per_cap),'Top per resident ('+lead.zip+')'):'');
+}
+const stat=(b,l)=>'<div class="stat"><div class="big">'+b+'</div><div class="lab">'+l+'</div></div>';
+
+function renderTop(rows){
+  let pool=rows.map(f=>f.properties);
+  if(metric==='per_cap') pool=pool.filter(p=>p.pop>=5000);
+  pool.sort((a,b)=>b[metric]-a[metric]);
+  const top=pool.slice(0,15);
+  const col={NY:'#1c5f9e',TX:'#b1471f'};
+  document.getElementById('toptitle').textContent='Top ZIP codes — '+(metric==='sales'?'total sales':'per resident');
+  document.getElementById('topcap').textContent=(state==='ALL'?'New York and Texas':state==='NY'?'New York':'Texas')+', trailing 12 months';
+  document.getElementById('toptable').innerHTML=top.map(p=>{
+    const val=metric==='sales'?fmtUSD(p.sales):fmtCap(p.per_cap);
+    return '<tr><td><span class="dot" style="background:'+col[p.state]+'"></span>'+
+      '<span class="z">'+(p.city||p.zip)+'</span> <span class="c">'+p.zip+'</span></td>'+
+      '<td class="v">'+val+'</td></tr>';
+  }).join('');
+}
+
+document.getElementById('metric').addEventListener('click',e=>{
+  if(!e.target.dataset.m)return; metric=e.target.dataset.m;
+  [...e.currentTarget.children].forEach(b=>b.classList.toggle('on',b===e.target)); render();
+});
+document.getElementById('statef').addEventListener('click',e=>{
+  if(!e.target.dataset.s)return; state=e.target.dataset.s;
+  [...e.currentTarget.children].forEach(b=>b.classList.toggle('on',b===e.target)); render();
+});
+</script>
+</body>
+</html>
