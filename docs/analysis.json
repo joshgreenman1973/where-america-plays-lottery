@@ -1,0 +1,90 @@
+{
+ "windows": {
+  "ny": "June 2025 through June 2026",
+  "tx": "July 2025 through June 2026"
+ },
+ "per_capita": {
+  "NY": 409,
+  "TX": 256
+ },
+ "concentration": {
+  "NY": 42.5,
+  "TX": 31.1
+ },
+ "nyc_numbers": {
+  "nyc": 30.9,
+  "rest": 15.7
+ },
+ "mix": {
+  "NY": [
+   [
+    "Scratch-offs",
+    56.8
+   ],
+   [
+    "Daily numbers",
+    22.2
+   ],
+   [
+    "Keno",
+    7.4
+   ],
+   [
+    "Powerball + Mega",
+    8.7
+   ],
+   [
+    "Other draw",
+    4.9
+   ]
+  ],
+  "TX": [
+   [
+    "Scratch-offs",
+    79.5
+   ],
+   [
+    "Daily numbers",
+    5.6
+   ],
+   [
+    "Keno",
+    0.0
+   ],
+   [
+    "Powerball + Mega",
+    10.6
+   ],
+   [
+    "Other draw",
+    4.3
+   ]
+  ]
+ },
+ "ladder": [
+  {
+   "q": "Poorest 25%",
+   "inc": 56987,
+   "jackpot": 5.9,
+   "scratch": 60.8
+  },
+  {
+   "q": "Lower-middle",
+   "inc": 78785,
+   "jackpot": 7.9,
+   "scratch": 63.2
+  },
+  {
+   "q": "Upper-middle",
+   "inc": 105593,
+   "jackpot": 10.1,
+   "scratch": 61.8
+  },
+  {
+   "q": "Richest 25%",
+   "inc": 149250,
+   "jackpot": 13.1,
+   "scratch": 56.1
+  }
+ ]
+}
